@@ -22,13 +22,12 @@ jobs:
       uses: docker/setup-docker@v2
       with:
         docker-ce-version: stable
-        docker-compose-version: v2
 
     - name: Start containers
       run: |
         docker compose -f docker-compose.yml up -d --build
 
-    - name: Wait for MySQL to be ready
+    - name: Wait for MySQL
       run: sleep 15
 
     - name: Run migrations
