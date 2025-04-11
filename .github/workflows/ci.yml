@@ -28,7 +28,7 @@ jobs:
       run: |
         docker compose -f docker-compose.yml up -d --build
 
-    - name: Wait for MySQL
+    - name: Wait for MySQL to be ready
       run: sleep 15
 
     - name: Run migrations
