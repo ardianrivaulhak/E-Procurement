@@ -20,6 +20,7 @@ jobs:
         ports:
           - 3306:3306
         options: >-
+          --name mysql_db_new
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
           --health-timeout=5s
@@ -61,5 +62,13 @@ jobs:
       - name: Generate Laravel app key
         run: docker-compose exec -T app php artisan key:generate
 
+      - name: Wait for MySQL to be ready
+        run: |
+          docker-compose exec -T app bash -c '
+            until mysql -hmysql_db_new -ularavel -plaravel -e "select 1"; do
+              echo "Waiting for MySQL..."
+              sleep 2
+              done
+            '
       - name: Run migrations
         run: docker-compose exec -T app php artisan migrate --force
