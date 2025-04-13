@@ -1,39 +1,43 @@
-name: Laravel Docker CI/CD
+name: Laravel CI with Docker
 
 on:
   push:
     branches:
       - main
-  pull_request:
 
 jobs:
-  build-and-deploy:
+  laravel-tests:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: laravel
+          MYSQL_USER: laravel
+          MYSQL_PASSWORD: laravel
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
+      - name: Set up Docker
+        run: docker-compose -f docker-compose.yml up -d --build
 
-      - name: Copy .env.example to .env
-        run: cp ./src/.env.example ./src/.env
+      - name: Install composer dependencies
+        run: docker-compose exec -T app composer install
 
       - name: Generate Laravel app key
-        run: |
-          docker-compose -f docker-compose.yml up -d --build
-          sleep 15 # wait for containers to be ready
-          docker-compose exec app php artisan key:generate
+        run: docker-compose exec -T app php artisan key:generate
 
-      - name: Run Laravel migrations
-        run: docker-compose exec app php artisan migrate
-
-      - name: Run tests (optional)
-        run: docker-compose exec app php artisan test
-
-      - name: Shut down Docker
-        if: always()
-        run: docker-compose down
+      - name: Run migrations
+        run: docker-compose exec -T app php artisan migrate --force
+  
