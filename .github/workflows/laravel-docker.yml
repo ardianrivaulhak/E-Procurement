@@ -38,18 +38,11 @@ jobs:
       - name: Build and start containers
         run: docker-compose -f docker-compose.yml up -d --build
 
-      - name: Wait for app container to be ready
+      - name: Wait for MySQL to be ready
         run: |
-          timeout=60
-          while ! docker ps | grep -q 'laravel_appp'; do
-            echo "Waiting for app container..."
-            sleep 5
-            timeout=$((timeout - 5))
-            if [ "$timeout" -le 0 ]; then
-              echo "Timeout waiting for app container."
-              docker-compose logs
-              exit 1
-            fi
+          until docker-compose exec -T app mysql -h mysql -ularavel -plaravel -e "SELECT 1"; do
+            echo "Waiting for MySQL..."
+            sleep 3
           done
 
       - name: Install composer dependencies
@@ -60,6 +53,6 @@ jobs:
 
       - name: Generate Laravel app key
         run: docker-compose exec -T app php artisan key:generate
-        
+
       - name: Run migrations
         run: docker-compose exec -T app php artisan migrate --force
