@@ -35,6 +35,23 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose version
 
+      - name: Build and start containers
+        run: docker-compose -f docker-compose.yml up -d --build
+
+      - name: Wait for app container to be ready
+        run: |
+          timeout=60
+          while ! docker ps | grep -q 'laravel_appp'; do
+            echo "Waiting for app container..."
+            sleep 5
+            timeout=$((timeout - 5))
+            if [ "$timeout" -le 0 ]; then
+              echo "Timeout waiting for app container."
+              docker-compose logs
+              exit 1
+            fi
+          done
+
       - name: Install composer dependencies
         run: docker-compose exec -T app composer install
 
@@ -43,4 +60,3 @@ jobs:
 
       - name: Run migrations
         run: docker-compose exec -T app php artisan migrate --force
-  
